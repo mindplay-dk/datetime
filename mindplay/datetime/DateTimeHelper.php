@@ -7,12 +7,13 @@ use DateTimeZone;
 use RuntimeException;
 
 /**
- * @property int $time timestamp
+ * @property int               $time     timestamp
  * @property-read DateTimeZone $timezone default timezone setting
- * @property-read string $datetime machine-friendly date/time string representation (MySQL etc.)
- * @property-read string $date machine-friendly date-only string representation
- * @property-read string $short people-friendly short date/time format
- * @property-read string $long people-friendly long date/time format
+ * @property-read string       $datetime machine-friendly date/time string representation (MySQL etc.)
+ * @property-read string       $date     machine-friendly date-only string representation
+ * @property-read string       $short    people-friendly short date/time format
+ * @property-read string       $long     people-friendly long date/time format
+ * @property-read string       $age      people-friendly timestamp age
  */
 class DateTimeHelper
 {
@@ -43,6 +44,7 @@ class DateTimeHelper
 
     /**
      * @param string $name
+     *
      * @return mixed
      */
     public function __get($name)
@@ -56,7 +58,7 @@ class DateTimeHelper
 
     /**
      * @param string $name
-     * @param mixed $value
+     * @param mixed  $value
      */
     public function __set($name, $value)
     {
@@ -83,6 +85,7 @@ class DateTimeHelper
 
     /**
      * @param int|null $time integer timestamp
+     *
      * @see $time
      * @throws RuntimeException
      */
@@ -111,6 +114,7 @@ class DateTimeHelper
      * Change the timezone
      *
      * @param DateTimeZone|string $timezone
+     *
      * @return self
      */
     public function timezone($timezone)
@@ -156,6 +160,7 @@ class DateTimeHelper
 
     /**
      * @param string $string interval string ('1 day', '6 months', '2 years', '20 minutes', etc.)
+     *
      * @see DateInterval::modify()
      * @return self
      */
@@ -168,6 +173,7 @@ class DateTimeHelper
 
     /**
      * @param string $string interval string ('1 day', '6 months', '2 years', '20 minutes', etc.)
+     *
      * @see DateInterval::modify()
      * @return self
      */
@@ -180,6 +186,7 @@ class DateTimeHelper
 
     /**
      * @param string $format format name, or format string
+     *
      * @return string
      * @see DateTimeHelperConfig::$formats
      * @see DateTime::format()
@@ -191,5 +198,53 @@ class DateTimeHelper
         }
 
         return $this->_time->format($format);
+    }
+
+    /**
+     * @see $since
+     */
+    protected function get_age()
+    {
+        return $this->since();
+    }
+
+    public function since($time = null, $granularity = 2)
+    {
+        if ($time === null) {
+            $time = $this->get_time();
+        }
+
+        $delta = time() - $time;
+
+        static $periods = array(
+            'year'   => 31536000,
+            'month'  => 2628000,
+            'week'   => 604800,
+            'day'    => 86400,
+            'hour'   => 3600,
+            'minute' => 60,
+            'second' => 1
+        );
+
+        if ($delta < 5) {
+            return 'now';
+        } else {
+            $since = '';
+
+            foreach ($periods as $key => $value) {
+                if ($delta >= $value) {
+                    $time = floor($delta / $value);
+                    $delta %= $value;
+                    $since .= ($since === '' ? '' : ' ') . $time . ' ';
+                    $since .= (($time > 1) ? $key . 's' : $key);
+
+                    if (--$granularity === 0) {
+                        return $since;
+                    }
+                }
+            }
+
+            return $since;
+        }
     }
 }

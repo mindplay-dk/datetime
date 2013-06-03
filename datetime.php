@@ -15,7 +15,7 @@ use mindplay\datetime\DateTimeHelper;
  * @return DateTimeHelper
  * @throws RuntimeException
  */
-function datetime($time = 0)
+function datetime($time = null)
 {
     /**
      * @var DateTimeHelper $helper
@@ -27,9 +27,11 @@ function datetime($time = 0)
     }
 
     if (is_int($time)) {
-        $helper->time = $time === 0 ? time() : $time;
+        $helper->time = $time;
     } elseif (is_string($time)) {
         $helper->time = strtotime($time);
+    } elseif ($time === null) {
+        $helper->time = time();
     } else {
         throw new RuntimeException("invalid argument: " . var_export($time, true));
     }

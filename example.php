@@ -6,7 +6,7 @@ require_once __DIR__ . '/mindplay/datetime/DateTimeHelper.php';
 require_once __DIR__ . '/mindplay/datetime/DateTimeConfig.php';
 require_once __DIR__ . '/datetime.php';
 
-datetime()->config->timezone = new DateTimeZone('EST');
+datetime()->config->timezone = new DateTimeZone('America/New_York');
 
 echo datetime() . "\n";
 
@@ -25,3 +25,4 @@ echo datetime($now)->format('time') . "\n";
 echo datetime($now)->format('m.d.Y') . "\n";
 echo datetime($now)->month()->add('1 month') . "\n";
 echo datetime($now)->sub('20 minutes') . "\n";
+echo datetime($now)->sub('20 minutes')->age . "\n";
