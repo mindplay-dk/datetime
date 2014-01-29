@@ -8,12 +8,12 @@ use RuntimeException;
 
 /**
  * @property int               $time     timestamp
- * @property-read DateTimeZone $timezone default timezone setting
- * @property-read string       $datetime machine-friendly date/time string representation (MySQL etc.)
- * @property-read string       $date     machine-friendly date-only string representation
- * @property-read string       $short    people-friendly short date/time format
- * @property-read string       $long     people-friendly long date/time format
- * @property-read string       $age      people-friendly timestamp age
+ * @property-read DateTimeZone $timezone current timezone
+ * @property-read string       $datetime machine-friendly date/time string representation (MySQL DATETIME, etc.)
+ * @property-read string       $date     machine-friendly date-only string representation (MySQL DATE, etc.)
+ * @property-read string       $short    human-readable short date/time format
+ * @property-read string       $long     human-readable long date/time format
+ * @property-read string       $age      human-readable timestamp age
  */
 class DateTimeHelper
 {
@@ -28,7 +28,7 @@ class DateTimeHelper
     }
 
     /**
-     * @var DateTimeHelperConfig
+     * @var DateTimeConfig
      */
     public $config;
 
@@ -36,11 +36,6 @@ class DateTimeHelper
      * @var DateTime
      */
     protected $_time;
-
-    /**
-     * @var DateTimeZone default timezone (applies when setting the time)
-     */
-    protected $_timezone;
 
     /**
      * @param string $name
@@ -84,7 +79,9 @@ class DateTimeHelper
     }
 
     /**
-     * @param int|null $time integer timestamp
+     * Set the time (using a UNIX timestamp)
+     *
+     * @param int|null $time integer UNIX timestamp
      *
      * @see $time
      * @throws RuntimeException
@@ -95,7 +92,6 @@ class DateTimeHelper
             throw new RuntimeException("invalid value: " . var_export($time, true));
         }
 
-        $this->_time->setTimezone($this->config->timezone);
         $this->_time->setTimestamp($time);
     }
 
@@ -113,13 +109,19 @@ class DateTimeHelper
     /**
      * Change the timezone
      *
-     * @param DateTimeZone|string $timezone
+     * @param DateTimeZone|string|null $timezone timezone name (string) or object (DateTimeZone) or null (reset to default TimeZone)
      *
-     * @return self
+     * @return $this
      */
     public function timezone($timezone)
     {
-        $this->_time->setTimezone(is_string($timezone) ? new DateTimeZone($timezone) : $timezone);
+        if ($timezone === null) {
+            $timezone = $this->config->timezone;
+        } else if (is_string($timezone)) {
+            $timezone = new DateTimeZone($timezone);
+        }
+
+        $this->_time->setTimezone($timezone);
 
         return $this;
     }
@@ -127,7 +129,7 @@ class DateTimeHelper
     /**
      * Change the timezone to UTC
      *
-     * @return self
+     * @return $this
      */
     public function utc()
     {
@@ -137,7 +139,7 @@ class DateTimeHelper
     /**
      * Reset the time to 00:00:00 (midnight)
      *
-     * @return self
+     * @return $this
      */
     public function date()
     {
@@ -149,7 +151,7 @@ class DateTimeHelper
     /**
      * Reset the date/time to the first day of the month (at 00:00:00)
      *
-     * @return self
+     * @return $this
      */
     public function month()
     {
@@ -162,7 +164,7 @@ class DateTimeHelper
      * @param string $string interval string ('1 day', '6 months', '2 years', '20 minutes', etc.)
      *
      * @see DateInterval::modify()
-     * @return self
+     * @return $this
      */
     public function add($string)
     {
@@ -175,7 +177,7 @@ class DateTimeHelper
      * @param string $string interval string ('1 day', '6 months', '2 years', '20 minutes', etc.)
      *
      * @see DateInterval::modify()
-     * @return self
+     * @return $this
      */
     public function sub($string)
     {
@@ -201,20 +203,46 @@ class DateTimeHelper
     }
 
     /**
-     * @see $since
+     * Set the date/time (in the current timezone)
+     *
+     * @param string $time a date/time string in the given format
+     * @param string|null $format the input format; defaults to NULL meaning "best guess" (a'la {@see strtotime()})
+     *
+     * @return $this
+     */
+    public function set($time, $format = null)
+    {
+        if ($format === null) {
+            $this->_time = new DateTime($time, $this->_time->getTimezone());
+        } else {
+            if (isset($this->config->formats[$format])) {
+                $format = $this->config->formats[$format];
+            }
+
+            $this->_time = DateTime::createFromFormat($format, $time, $this->_time->getTimezone());
+        }
+
+        return $this;
+    }
+
+    /**
+     * @see $age
      */
     protected function get_age()
     {
         return $this->since();
     }
 
-    public function since($time = null, $granularity = 2)
+    /**
+     * Format as human-readable "age" or "time ago", relative to current system time
+     *
+     * @param int $granularity
+     *
+     * @return string
+     */
+    public function since($granularity = 2)
     {
-        if ($time === null) {
-            $time = $this->get_time();
-        }
-
-        $delta = time() - $time;
+        $delta = time() - $this->get_time();
 
         static $periods = array(
             'year'   => 31536000,

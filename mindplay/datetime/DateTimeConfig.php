@@ -18,7 +18,7 @@ class DateTimeConfig
     }
 
     /**
-     * @var DateTimeZone default timezone - applies when calling datetime()
+     * @var DateTimeZone default timezone - applied when calling {@see datetime()}
      */
     public $timezone;
 
