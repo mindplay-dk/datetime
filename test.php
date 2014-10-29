@@ -1,11 +1,13 @@
 <?php
 
+/** @var \Composer\Autoload\ClassLoader $autoloader */
+$autoloader = require __DIR__ . '/vendor/autoload.php';
+$autoloader->addPsr4('mindplay\datetime\\', __DIR__ . '/src');
+
 require __DIR__ . '/datetime.php';
-require __DIR__ . '/mindplay/datetime/DateTimeHelper.php';
-require __DIR__ . '/mindplay/datetime/DateTimeConfig.php';
 
 test(
-    'Handles timezones',
+    'Can handles timezones',
     function() {
         eq('Defaults to UTC', datetime()->timezone->getName(), 'UTC');
 
@@ -22,9 +24,12 @@ test(
 
         eq('Changing the timezone does not affect the timestamp', datetime($UTC)->time, datetime($UTC)->timezone('America/New_York')->time);
 
-        eq('Formats time using EST timezone', datetime($UTC)->timezone('America/New_York')->datetime, $EST);
+        eq('Formats time using EST timezone [1]', datetime($UTC)->timezone('America/New_York')->datetime, $EST);
+        eq('Formats time using EST timezone [2]', datetime()->set($UTC)->timezone('America/New_York')->datetime, $EST);
+        eq('Formats time using EST timezone [3]', datetime($UTC, 'UTC')->timezone('America/New_York')->datetime, $EST);
 
-        eq('Correctly initializes with timezone', datetime($EST, 'America/New_York')->datetime, $EST);
+        eq('Correctly initializes with timezone [1]', datetime($EST, 'America/New_York')->datetime, $EST);
+        eq('Correctly initializes with timezone [2]', datetime($UTC)->datetime, $UTC);
 
         eq('Converts from EST string back to UTC string', datetime($EST, 'America/New_York')->utc()->datetime, datetime($UTC)->datetime);
     }
@@ -35,6 +40,27 @@ test(
     function () {
         eq('Adds 2 minutes', datetime('2014-01-29 16:58:00')->add('2 minutes')->datetime, '2014-01-29 17:00:00');
         eq('Subtracts 2 minutes', datetime('2014-01-29 16:58:00')->sub('2 minutes')->datetime, '2014-01-29 16:56:00');
+    }
+);
+
+test(
+    'Formats dates and times',
+    function () {
+        $DATE = '2014-01-29 16:58:00';
+
+        eq('$date returns a machine-friendly date', datetime($DATE)->date, '2014-01-29');
+        eq('$datetime returns a machine-friendly date/time', datetime($DATE)->datetime, '2014-01-29 16:58:00');
+        eq('$short returns a user-friendly short date/time', datetime($DATE)->short, '1/29/14 16:58');
+        eq('$long returns a user-friendly long date/time', datetime($DATE)->long, 'Wed Jan 29 2014 16:58');
+        eq('date() resets the time to midnight', datetime($DATE)->date()->long, 'Wed Jan 29 2014 00:00');
+        eq('timezone() converts to EST', datetime($DATE)->timezone('EST')->short, '1/29/14 11:58');
+        eq('timezone() converts to PST', datetime($DATE)->timezone('PST')->short, '1/29/14 08:58');
+        eq('$time returns an integer timestamp', datetime($DATE)->time, 1391014680);
+        eq('format() accepts a named format ("time")', datetime($DATE)->format('time'), '16:58:00');
+        eq('format() accepts a custom format ("m.d.Y")', datetime($DATE)->format('m.d.Y'), '01.29.2014');
+        eq('month() resets the date to the first day of the month', datetime($DATE)->month()->short, '1/1/14 16:58');
+        eq('add() accepts a legible interval ("20 minutes")', datetime($DATE)->add('20 minutes')->short, '1/29/14 17:18');
+        eq('sub() accepts a legible interval ("20 minutes")', datetime($DATE)->sub('20 minutes')->short, '1/29/14 16:38');
     }
 );
 

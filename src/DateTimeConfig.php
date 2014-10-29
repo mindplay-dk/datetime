@@ -18,20 +18,23 @@ class DateTimeConfig
     }
 
     /**
-     * @var DateTimeZone default timezone - applied when calling {@see datetime()}
+     * @var DateTimeZone default timezone - applied when calling datetime()
+     *
+     * @see datetime()
      */
     public $timezone;
 
     /**
      * @var string[] hash where format-name => date/time format string
-     * @see format()
+     *
+     * @see DateTimeHelper::format()
      */
     public $formats = array(
-        'default' => 'n/j/y H:i',
+        'default'  => 'n/j/y H:i',
         'datetime' => 'Y-m-d H:i:s',
-        'date' => 'Y-m-d',
-        'time' => 'H:i:s',
-        'short' => 'n/j/y H:i',
-        'long' => 'D M j Y H:i',
+        'date'     => 'Y-m-d',
+        'time'     => 'H:i:s',
+        'short'    => 'n/j/y H:i',
+        'long'     => 'D M j Y H:i',
     );
 }

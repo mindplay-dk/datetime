@@ -54,56 +54,30 @@ class DateTimeHelper
     /**
      * @param string $name
      * @param mixed  $value
+     *
+     * @return void
      */
     public function __set($name, $value)
     {
-        $this->{"set_$name"}($value);
+        $fn = "set_$name";
+
+        if (false === method_exists($this, $fn)) {
+            throw new RuntimeException("undefined property \${$name} or accessor {$fn}");
+        }
+
+        $this->$fn($value);
     }
 
     /**
      * @return string
+     *
      * @see format()
+     *
+     * @ignore
      */
     public function __toString()
     {
         return $this->format();
-    }
-
-    /**
-     * @return int integer timestamp
-     * @see $time
-     */
-    protected function get_time()
-    {
-        return $this->_time->getTimestamp();
-    }
-
-    /**
-     * Set the time (using a UNIX timestamp)
-     *
-     * @param int|null $time integer UNIX timestamp
-     *
-     * @see $time
-     * @throws RuntimeException
-     */
-    protected function set_time($time)
-    {
-        if (false === is_int($time)) {
-            throw new RuntimeException("invalid value: " . var_export($time, true));
-        }
-
-        $this->_time->setTimestamp($time);
-    }
-
-    /**
-     * Get the timezone
-     *
-     * @return DateTimeZone
-     * @see $timezone
-     */
-    protected function get_timezone()
-    {
-        return $this->_time->getTimezone();
     }
 
     /**
@@ -117,8 +91,10 @@ class DateTimeHelper
     {
         if ($timezone === null) {
             $timezone = $this->config->timezone;
-        } else if (is_string($timezone)) {
-            $timezone = new DateTimeZone($timezone);
+        } else {
+            if (is_string($timezone)) {
+                $timezone = new DateTimeZone($timezone);
+            }
         }
 
         $this->_time->setTimezone($timezone);
@@ -127,7 +103,7 @@ class DateTimeHelper
     }
 
     /**
-     * Change the timezone to UTC
+     * Change the timezone to UTC.
      *
      * @return $this
      */
@@ -161,10 +137,13 @@ class DateTimeHelper
     }
 
     /**
+     * Add an interval to the current date/time.
+     *
      * @param string $string interval string ('1 day', '6 months', '2 years', '20 minutes', etc.)
      *
-     * @see DateInterval::modify()
      * @return $this
+     *
+     * @see DateInterval::modify()
      */
     public function add($string)
     {
@@ -174,10 +153,13 @@ class DateTimeHelper
     }
 
     /**
+     * Subtract an interval from the current date/time.
+     *
      * @param string $string interval string ('1 day', '6 months', '2 years', '20 minutes', etc.)
      *
-     * @see DateInterval::modify()
      * @return $this
+     *
+     * @see DateInterval::modify()
      */
     public function sub($string)
     {
@@ -187,10 +169,14 @@ class DateTimeHelper
     }
 
     /**
+     * Format the current date/time using a named format defined in {@see DateTimeConfig::$formats},
+     * or using a format string compatible with {@see DateTime::format()}
+     *
      * @param string $format format name, or format string
      *
      * @return string
-     * @see DateTimeHelperConfig::$formats
+     *
+     * @see DateTimeConfig::$formats
      * @see DateTime::format()
      */
     public function format($format = 'default')
@@ -203,9 +189,15 @@ class DateTimeHelper
     }
 
     /**
-     * Set the date/time (in the current timezone)
+     * Parse and set the current date/time, retaining the current timezone.
      *
-     * @param string $time a date/time string in the given format
+     * To parse a date/time in a specific timezone, call {@see timezone()} before calling this method.
+     *
+     * To convert the parsed date/time into a different timezone, call {@see timezone()} after callling this method.
+     *
+     * If you have an integer timestamp, call {@see datetime()} instead.
+     *
+     * @param string      $time   a date/time string in the given format
      * @param string|null $format the input format; defaults to NULL meaning "best guess" (a'la {@see strtotime()})
      *
      * @return $this
@@ -223,14 +215,6 @@ class DateTimeHelper
         }
 
         return $this;
-    }
-
-    /**
-     * @see $age
-     */
-    protected function get_age()
-    {
-        return $this->since();
     }
 
     /**
@@ -274,5 +258,50 @@ class DateTimeHelper
 
             return $since;
         }
+    }
+
+    /**
+     * @return int integer timestamp
+     * @see $time
+     */
+    protected function get_time()
+    {
+        return $this->_time->getTimestamp();
+    }
+
+    /**
+     * Set the time (using a UNIX timestamp)
+     *
+     * @param int|null $time integer UNIX timestamp
+     *
+     * @see $time
+     * @throws RuntimeException
+     */
+    protected function set_time($time)
+    {
+        if (false === is_int($time)) {
+            throw new RuntimeException("invalid value: " . var_export($time, true));
+        }
+
+        $this->_time->setTimestamp($time);
+    }
+
+    /**
+     * Get the timezone
+     *
+     * @return DateTimeZone
+     * @see $timezone
+     */
+    protected function get_timezone()
+    {
+        return $this->_time->getTimezone();
+    }
+
+    /**
+     * @see $age
+     */
+    protected function get_age()
+    {
+        return $this->since();
     }
 }

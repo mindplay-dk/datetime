@@ -32,17 +32,19 @@ function datetime($time = null, $timezone = null)
     if (is_int($time)) {
         // initialize from UNIX timestamp:
         $helper->time = $time; // (also resets to default timezone)
-        $helper->timezone($timezone); // switch to requested timezone
-    } elseif (is_string($time)) {
-        // initialize from string:
-        $helper->timezone($timezone)->set($time);
-    } elseif ($time === null) {
-        // initialize from current time:
-        $helper->time = time();
-        $helper->timezone($timezone);
-    } else {
-        throw new RuntimeException("invalid argument: " . var_export($time, true));
+        return $helper->timezone($timezone); // switch to requested timezone
     }
 
-    return $helper;
+    if (is_string($time)) {
+        // initialize from string:
+        return $helper->timezone($timezone)->set($time);
+    }
+
+    if ($time === null) {
+        // initialize from current time:
+        $helper->time = time();
+        return $helper->timezone($timezone);
+    }
+
+    throw new RuntimeException("invalid argument: " . var_export($time, true));
 }
