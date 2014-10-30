@@ -4,7 +4,13 @@
 $autoloader = require __DIR__ . '/vendor/autoload.php';
 $autoloader->addPsr4('mindplay\datetime\\', __DIR__ . '/src');
 
-require __DIR__ . '/datetime.php';
+require __DIR__ . '/src/datetime.func.php';
+
+if (coverage()) {
+    coverage()->filter()->addDirectoryToWhitelist(__DIR__ . '/src');
+
+    coverage('test');
+}
 
 test(
     'Can handles timezones',
@@ -49,20 +55,46 @@ test(
 );
 
 test(
-    'Adds and subtracts intervals',
+    'Can parse date and time',
     function () {
-        eq(datetime('2014-01-29 16:58:00')->add('2 minutes')->datetime, '2014-01-29 17:00:00',
-            'Adds 2 minutes');
+        $SHORT = '1/29/14 16:58';
 
-        eq(datetime('2014-01-29 16:58:00')->sub('2 minutes')->datetime, '2014-01-29 16:56:00',
-            'Subtracts 2 minutes');
+        eq(datetime()->set($SHORT, 'short')->time, datetime($SHORT)->time,
+            'can parse date/time in a named format');
+
+        $LONG = '2014-01-29 16:58:00';
+
+        eq(datetime()->set($LONG, 'Y-m-d H:i:s')->time, datetime($LONG)->time,
+            'can parse date/time in a specified format');
     }
 );
 
 test(
-    'Formats dates and times',
+    'Can manipulate date and time',
     function () {
         $DATE = '2014-01-29 16:58:00';
+
+        eq(datetime($DATE)->date()->long, 'Wed Jan 29 2014 00:00',
+            'date() resets the time to midnight');
+
+        eq(datetime($DATE)->month()->short, '1/1/14 16:58',
+            'month() resets the date to the first day of the month');
+
+        eq(datetime($DATE)->add('20 minutes')->short, '1/29/14 17:18',
+            'add() accepts a legible interval ("20 minutes")');
+
+        eq(datetime($DATE)->sub('20 minutes')->short, '1/29/14 16:38',
+            'sub() accepts a legible interval ("20 minutes")');
+    }
+);
+
+test(
+    'Can format date and time',
+    function () {
+        $DATE = '2014-01-29 16:58:00';
+
+        eq((string) datetime($DATE), '1/29/14 16:58',
+            'objct converts itself to a string');
 
         eq(datetime($DATE)->date, '2014-01-29',
             '$date returns a machine-friendly date');
@@ -76,15 +108,6 @@ test(
         eq(datetime($DATE)->long, 'Wed Jan 29 2014 16:58',
             '$long returns a user-friendly long date/time');
 
-        eq(datetime($DATE)->date()->long, 'Wed Jan 29 2014 00:00',
-            'date() resets the time to midnight');
-
-        eq(datetime($DATE)->timezone('EST')->short, '1/29/14 11:58',
-            'timezone() converts to EST');
-
-        eq(datetime($DATE)->timezone('PST')->short, '1/29/14 08:58',
-            'timezone() converts to PST');
-
         eq(datetime($DATE)->time, 1391014680,
             '$time returns an integer timestamp');
 
@@ -94,16 +117,61 @@ test(
         eq(datetime($DATE)->format('m.d.Y'), '01.29.2014',
             'format() accepts a custom format ("m.d.Y")');
 
-        eq(datetime($DATE)->month()->short, '1/1/14 16:58',
-            'month() resets the date to the first day of the month');
+        eq(datetime()->sub('1 year')->age, '1 year',
+            '$age returns the formatted age');
 
-        eq(datetime($DATE)->add('20 minutes')->short, '1/29/14 17:18',
-            'add() accepts a legible interval ("20 minutes")');
+        eq(datetime()->sub('2 months')->age(1), '2 months',
+            'age() returns the formatted age [1]');
 
-        eq(datetime($DATE)->sub('20 minutes')->short, '1/29/14 16:38',
-            'sub() accepts a legible interval ("20 minutes")');
+        eq(datetime()->age(), 'now',
+            'age() returns the formatted age [2]');
     }
 );
+
+test(
+    'Expected Exceptions',
+    function () {
+        expect(
+            'RuntimeException',
+            'invalid argument to datetime()',
+            function () {
+                $foo = (object) array();
+
+                datetime($foo);
+            }
+        );
+
+        expect(
+            'RuntimeException',
+            'undefined property write',
+            function () {
+                datetime()->foo = 'bar';
+            }
+        );
+
+        expect(
+            'RuntimeException',
+            'setting invalid time',
+            function () {
+                datetime()->time = 'no_sir';
+            }
+        );
+    }
+);
+
+if (coverage()) {
+    // output code coverage report to console:
+
+    $report = new PHP_CodeCoverage_Report_Text(10, 90, false, false);
+
+    echo $report->process(coverage(), false);
+
+    // output code coverage report for integration with CI tools:
+
+    $report = new PHP_CodeCoverage_Report_Clover();
+
+    $report->process(coverage(), 'build/logs/clover.xml');
+}
 
 exit(status());
 
@@ -204,6 +272,42 @@ function format($value, $verbose = false)
     }
 
     return print_r($value, true);
+}
+
+/**
+ * @param string|null $text description (to start coverage); or null (to stop coverage)
+ * @return PHP_CodeCoverage|null
+ */
+function coverage($text = null)
+{
+    static $coverage = null;
+    static $running = false;
+
+    if ($coverage === false) {
+        return null; // code coverage unavailable
+    }
+
+    if ($coverage === null) {
+        try {
+            $coverage = new PHP_CodeCoverage;
+        } catch (PHP_CodeCoverage_Exception $e) {
+            echo "# Notice: no code coverage run-time available\n";
+            $coverage = false;
+            return null;
+        }
+    }
+
+    if (is_string($text)) {
+        $coverage->start($text);
+        $running = true;
+    } else {
+        if ($running) {
+            $coverage->stop();
+            $running = false;
+        }
+    }
+
+    return $coverage;
 }
 
 /**

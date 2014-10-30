@@ -224,7 +224,7 @@ class DateTimeHelper
      *
      * @return string
      */
-    public function since($granularity = 2)
+    public function age($granularity = 2)
     {
         $delta = time() - $this->get_time();
 
@@ -302,6 +302,6 @@ class DateTimeHelper
      */
     protected function get_age()
     {
-        return $this->since();
+        return $this->age();
     }
 }
