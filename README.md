@@ -1,52 +1,24 @@
-This is a date/time helper for convenient work with integer timestamps.
+mindplay/datetime
+-----------------
 
-As working with timestamps (integers) can be rather clumsy, I've been trying to work
-with `DateTime` instead, and found that to be even worse, and rather error-prone.
+[![Build Status](https://travis-ci.org/mindplay-dk/datetime.svg?branch=master)](https://travis-ci.org/mindplay-dk/datetime)
 
-Here's a simple example that demonstrates the problem:
+[![Code Coverage](https://scrutinizer-ci.com/g/mindplay-dk/datetime/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/mindplay-dk/datetime/?branch=master)
 
-    $today = new DateTime();
-    $yesterday = $today->modify('-1 day');
-    
-    echo "today: " . $today->format('Y-m-d') . "\n";
-    echo "yesterday: " . $yesterday->format('Y-m-d');
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/mindplay-dk/datetime/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/mindplay-dk/datetime/?branch=master)
 
-If you understand how `DateTime` works, you might expect the following nonsense:
+This date/time helper tries to make date/time management in PHP less prickly, by
+providing a chainable helper that can be accessed via a global function `datetime()`.
 
-    today: 2013-03-21
-    yesterday: 2013-03-21
-
-Methods like `modify()`, `add()` and `sub()` modify the `DateTime` object, rather
-than returning a new `DateTime` instance. Bunk.
-
-Of course, you can work around this by manually cloning your DateTime objects, but
-this can get rather ugly, and seems counter-intuitive - most people think of a
-simple date/time value as being a _value_ rather than an object, and as such you
-would expect it would always be copied rather than referenced; the same as any
-other value, say, a string or integer.
-
-Countless libraries have attempted to work around this by extending `DateTime` and
-fixing these issues by having most methods automatically `clone` and return a copy
-rather than modifying the original object. This generally leads to problems with
-serialization and object/relational-mapping, where you now need to explicitly
-support a new extended `DateTime` type.
-
-The bottom line is that I don't want what is essentially a value-type encapsulated
-as an object - it's just dumb.
-
-Back to timestamps then: I wanted a convenient way to work with timestamps, that
-would provide the same convenience (and IDE support) as with `DateTime`, without
-the ouchy cactus-like feel.
-
-My solution is a simple global function that provides access to a helper-class
-with chainable methods.
+I wanted a convenient way to work with timestamps, which would provide the same
+convenience (and IDE support) as e.g. `DateTime`, but without the problems.
 
 The global `datetime()` function takes an integer timestamp as argument, or a
 valid date/time string compatible with `strtotime()`, applies it to the helper,
 and returns it.
 
     $time = datetime('1975-07-07')->time; // parse date/time string to timestamp
-    
+
     $str = datetime(time())->datetime; // timestamp to 'YYYY-MM-DD HH:MM:SS' format
 
 The helper has a configuration object that defines global date/time formats and
@@ -72,19 +44,57 @@ the end of a chain. Default formats like `'short'`, `'long'`, `'string'` and
 Basic computations can also be performed using plain english:
 
     $today = datetime()->date()->time; // date() resets the time to 00:00:00
-    
+
     $this_month = datetime()->month()->time; // month() resets to start of the month
-    
+
     $next_week = datetime()->add('1 week')->time;
-    
+
     $whenever = datetime()->add('1 month')->sub('3 days 2 hours 1 minute')->time;
 
 One word of caution: unless you `echo` the result (invoking `__toString()`) your
-chains should always end with a property rather than a method `()` call - by
-convention, properties never return the helper object.
+call-chains should always end with a property rather than a method `()` call - the
+properties of the helper-class never return the helper object, always a value.
 
     $bad = datetime(); // reference to DateTimeHelper !
-    
+
     $wrong = datetime()->timezone('EST')->add('1 week'); // oh noes!
 
-That's all for now...
+There's a bunch of other features, go ahead and check out the unit-test for examples
+of every possible operation, or play around using auto-complete in your IDE.
+
+
+Why not objects?
+----------------
+
+Nobody doesn't love objects, but `DateTime` is trouble - watch:
+
+    $today = new DateTime();
+    $yesterday = $today->modify('-1 day');
+    
+    echo "today: " . $today->format('Y-m-d') . "\n";
+    echo "yesterday: " . $yesterday->format('Y-m-d');
+
+If you understand how `DateTime` works, you might be prepared for this nonsense:
+
+    today: 2013-03-21
+    yesterday: 2013-03-21
+
+Methods like `modify()`, `add()` and `sub()` modify the `DateTime` object, rather
+than returning a new `DateTime` instance.
+
+And sure, you got `DateTimeImmutable` in more recent versions of PHP (and before
+it, dozens of third-party immutable date/time object implementations in userland)
+but you're still working with objects.
+
+A timestamp is a value - when dealing with timestamps, I therefore want a value
+type, not an object, which is more complicated to handle when dealing with e.g.
+serialization, object/relational-mapping, etc.
+
+When dealing with timezones, I don't want the timezone attached to the timestamp,
+because the timestamp and timezone do not actually have a meaningful relationship:
+timestamps are absolute, and that doesn't change when you attach it to a timezone;
+the only time that isn't true, is when you want the date/time as a string, but
+it's often more confusing to carry around the timezone information with the value
+for later use, since, when it finally gets turned into a string, it may not be
+obvious what timezone is being used - this can make programs rather confusing
+and difficult to read.
