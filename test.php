@@ -78,6 +78,15 @@ test(
         eq(datetime($DATE)->month()->short, '1/1/14 16:58',
             'month() resets the date to the first day of the month');
 
+        eq(datetime($DATE)->year()->short, '1/1/14 16:58',
+            'month() resets the date to the first day of the month');
+
+        eq(datetime($DATE)->sunday()->short, '1/26/14 16:58',
+            'sunday() resets the date to the first day of the week start on Sunday');
+
+        eq(datetime($DATE)->monday()->short, '1/27/14 16:58',
+            'monday() resets the date to the first day of the week start on Monday');
+
         eq(datetime($DATE)->add('20 minutes')->short, '1/29/14 17:18',
             'add() accepts a legible interval ("20 minutes")');
 

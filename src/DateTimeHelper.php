@@ -125,13 +125,47 @@ class DateTimeHelper
     }
 
     /**
-     * Reset the date/time to the first day of the month (at 00:00:00)
+     * Reset the date to the first day of the month (at 00:00:00)
      *
      * @return $this
      */
     public function month()
     {
         $this->_time->setDate($this->_time->format('Y'), $this->_time->format('n'), 1);
+
+        return $this;
+    }
+
+    /**
+     * Reset the date to the first day
+     */
+    public function year()
+    {
+        $this->_time->setDate($this->_time->format('Y'), 1, 1);
+
+        return $this;
+    }
+
+    /**
+     * Reset the date to the first day of the week starting on Monday (at 00:00:00)
+     *
+     * @return $this;
+     */
+    public function monday()
+    {
+        $this->_time->modify('-' . ((int) $this->_time->format('N') - 1) . ' days');
+
+        return $this;
+    }
+
+    /**
+     * Reset the date to the first day of the week starting on Sunday (at 00:00:00)
+     *
+     * @return $this;
+     */
+    public function sunday()
+    {
+        $this->_time->modify('-' . ((int) $this->_time->format('w')) . ' days');
 
         return $this;
     }
@@ -147,7 +181,7 @@ class DateTimeHelper
      */
     public function add($string)
     {
-        $this->_time->modify("+$string");
+        $this->_time->modify('+' . $string);
 
         return $this;
     }
@@ -163,7 +197,7 @@ class DateTimeHelper
      */
     public function sub($string)
     {
-        $this->_time->modify("-$string");
+        $this->_time->modify('-' . $string);
 
         return $this;
     }
